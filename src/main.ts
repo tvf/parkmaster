@@ -39,12 +39,12 @@ function draw_wheel(ctx: CanvasRenderingContext2D, car: Car) {
   );
 }
 
-function paint_car(ctx: CanvasRenderingContext2D, car: Car) {
+function paint_car(ctx: CanvasRenderingContext2D, car: Car, zoom: number) {
   ctx.resetTransform();
   ctx.clearRect(0, 0, 720, 720);
 
   ctx.translate(360, 360);
-  ctx.scale(40, -40);
+  ctx.scale(zoom, -zoom);
 
   ctx.lineJoin = 'round';
 
@@ -134,12 +134,14 @@ function main() {
     phi: 0,
   };
 
+  let zoom = 40;
+
   const simulation_canvas: HTMLCanvasElement = document.getElementById(
     'simulation',
   ) as HTMLCanvasElement;
   const simulation_ctx = simulation_canvas.getContext('2d');
 
-  if (simulation_ctx) paint_car(simulation_ctx, car);
+  if (simulation_ctx) paint_car(simulation_ctx, car, zoom);
 
   let left = false;
   let right = false;
@@ -147,12 +149,25 @@ function main() {
   let down = false;
 
   window.addEventListener('keydown', (event) => {
+
     if (event.key === 'ArrowLeft') left = true;
     if (event.key === 'ArrowRight') right = true;
     if (event.key === 'ArrowUp') up = true;
     if (event.key === 'ArrowDown') down = true;
 
-    if (left || right || up || down) window.requestAnimationFrame(step);
+    let dirty = false;
+
+    if (event.key === '+') {
+      zoom *= 2;
+      dirty = true;
+    }
+
+    if (event.key === '-') {
+      zoom /= 2;
+      dirty = true;
+    }
+
+    if (dirty || left || right || up || down) window.requestAnimationFrame(step);
   });
 
   window.addEventListener('keyup', (event) => {
@@ -190,7 +205,7 @@ function main() {
         else car.s = 0;
       }
 
-      if (simulation_ctx) paint_car(simulation_ctx, car);
+      if (simulation_ctx) paint_car(simulation_ctx, car, zoom);
     }
 
     prev_timestamp = timestamp;
