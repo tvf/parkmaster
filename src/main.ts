@@ -1,5 +1,16 @@
 import { vec2 } from 'gl-matrix';
 
+interface Trailer {
+  L: number;
+  box_width: number;
+  box_length: number;
+  wheel_width: number;
+  wheel_diameter: number;
+  gauge: number;
+
+  theta: number;
+}
+
 interface Car {
   // geometry
   L: number; // distance from rear axle to front axle
@@ -17,6 +28,8 @@ interface Car {
   // control
   s: number; // speed
   phi: number; // steer in radians from car's heading
+
+  trailers: Trailer[];
 }
 
 main();
@@ -53,6 +66,8 @@ function paint_car(ctx: CanvasRenderingContext2D, car: Car, zoom: number) {
   ctx.lineWidth = draw_radius;
 
   ctx.translate(car.x, car.y);
+  //ctx.save();
+
   ctx.rotate(car.theta);
 
   ctx.beginPath();
@@ -115,6 +130,42 @@ function paint_car(ctx: CanvasRenderingContext2D, car: Car, zoom: number) {
   ctx.rotate(car.phi > 0 ? outer_wheel_angle : inner_wheel_angle);
   draw_wheel(ctx, car);
   ctx.restore();
+
+  // ctx.restore();
+
+  // OK now draw the trailer!
+  car.trailers.forEach((trailer) => {
+    ctx.rotate(trailer.theta);
+    ctx.translate(-trailer.L, 0);
+
+    ctx.save();
+    ctx.translate(0, trailer.gauge / 2);
+    draw_wheel(ctx, car);
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(0, -trailer.gauge / 2);
+    draw_wheel(ctx, car);
+    ctx.restore();
+
+    ctx.strokeRect(
+      -trailer.box_length / 2,
+      -trailer.box_width / 2,
+      trailer.box_length,
+      trailer.box_width,
+    );
+
+    ctx.strokeRect(
+      trailer.box_length / 2,
+      0,
+      trailer.L - trailer.box_length / 2,
+      0,
+    );
+
+    ctx.beginPath();
+    ctx.arc(trailer.L, 0, 0.05, 0, 2 * Math.PI);
+    ctx.fill();
+  });
 }
 
 function main() {
@@ -132,6 +183,27 @@ function main() {
 
     s: 0,
     phi: 0,
+
+    trailers: [
+      //   {
+      //   L: 3,
+      //   box_length: 2,
+      //   box_width: 2,
+      //   wheel_width: 0.25,
+      //   wheel_diameter: 0.75,
+      //   gauge: 1.5,
+      //   theta: Math.PI / 3
+      // },
+      // {
+      //   L: 3,
+      //   box_length: 2,
+      //   box_width: 2,
+      //   wheel_width: 0.25,
+      //   wheel_diameter: 0.75,
+      //   gauge: 1.5,
+      //   theta: Math.PI / 3
+      // },
+    ],
   };
 
   let zoom = 40;
@@ -149,7 +221,6 @@ function main() {
   let down = false;
 
   window.addEventListener('keydown', (event) => {
-
     if (event.key === 'ArrowLeft') left = true;
     if (event.key === 'ArrowRight') right = true;
     if (event.key === 'ArrowUp') up = true;
@@ -167,7 +238,24 @@ function main() {
       dirty = true;
     }
 
-    if (dirty || left || right || up || down) window.requestAnimationFrame(step);
+    if (event.key === 't') {
+      let trailer: Trailer = {
+        L: 3,
+        box_length: 2,
+        box_width: 2,
+        wheel_width: 0.25,
+        wheel_diameter: 0.75,
+        gauge: 1.5,
+
+        theta: 0,
+      };
+
+      car.trailers.push(trailer);
+      dirty = true;
+    }
+
+    if (dirty || left || right || up || down)
+      window.requestAnimationFrame(step);
   });
 
   window.addEventListener('keyup', (event) => {
@@ -192,7 +280,28 @@ function main() {
         // TODO update car.xy, car.theta according to car.s, car.phi, elapsed
         car.x += (elapsed / 400) * car.s * Math.cos(car.theta);
         car.y += (elapsed / 400) * car.s * Math.sin(car.theta);
-        car.theta += (((elapsed / 400) * car.s) / car.L) * Math.tan(car.phi);
+
+        let theta_inc = (((elapsed / 400) * car.s) / car.L) * Math.tan(car.phi);
+        car.theta += theta_inc;
+
+        let cumulative = theta_inc;
+
+        for (var i = 0; i < car.trailers.length; ++i) {
+          let product = 1;
+          for (var j = 0; j < i; ++j) {
+            product *= Math.cos(-car.trailers[j].theta);
+          }
+
+          theta_inc =
+            (((elapsed / 400) * car.s) / car.trailers[i].L) *
+              product *
+              Math.sin(-car.trailers[i].theta) -
+            cumulative;
+
+          cumulative += theta_inc;
+
+          car.trailers[i].theta += theta_inc;
+        }
 
         // then update car.s, car.phi according to keyboard input
         if (left) car.phi += elapsed / 1000;
