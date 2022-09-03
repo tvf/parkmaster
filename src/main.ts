@@ -41,9 +41,9 @@ function draw_wheel(ctx: CanvasRenderingContext2D, car: Car) {
 
 function paint_car(ctx: CanvasRenderingContext2D, car: Car) {
   ctx.resetTransform();
-  ctx.clearRect(0, 0, 480, 480);
+  ctx.clearRect(0, 0, 720, 720);
 
-  ctx.translate(240, 240);
+  ctx.translate(360, 360);
   ctx.scale(40, -40);
 
   ctx.lineJoin = 'round';
@@ -178,10 +178,6 @@ function main() {
         car.x += (elapsed / 400) * car.s * Math.cos(car.theta);
         car.y += (elapsed / 400) * car.s * Math.sin(car.theta);
         car.theta += (((elapsed / 400) * car.s) / car.L) * Math.tan(car.phi);
-
-        console.log(car.s);
-        console.log(car.theta);
-        console.log(car.x);
 
         // then update car.s, car.phi according to keyboard input
         if (left) car.phi += elapsed / 1000;
