@@ -3,6 +3,11 @@
   justify-content: center;
 }
 
+#helptext {
+  display: flex;
+  justify-content: center;
+}
+
 #visualisations canvas {
   border: 1px solid black;
   margin: 5px;

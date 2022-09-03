@@ -254,6 +254,11 @@ function main() {
       dirty = true;
     }
 
+    if (event.key === 'T') {
+      car.trailers.pop();
+      dirty = true;
+    }
+
     if (dirty || left || right || up || down)
       window.requestAnimationFrame(step);
   });
